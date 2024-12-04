@@ -1,6 +1,6 @@
 # Control de Inventarios
 
-Este proyecto es para la materia de Algoritmos de la Universidad Compensar del primer semestre, y tiene como finalidad desarrollar un programa de control de inventarios.
+Este es mi proyecto es de todos en python, y tiene como finalidad desarrollar un programa de control de inventarios.
 
 
 ## Descripción del Proyecto
@@ -10,13 +10,6 @@ El programa desarrollado en este proyecto permite gestionar las existencias medi
 Credenciales de administrador:
 admin user: admin
 admin password: 321
-
-## Integrantes
-
--Freddy Johan Bautista
--Sebastian Viloria
--Angie Maritza
--Javier Martinez
 
 ## Requisitos
 
