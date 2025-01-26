@@ -1,6 +1,6 @@
 # Control de Inventarios
 
-Este es mi proyecto es de todos en python, y tiene como finalidad desarrollar un programa de control de inventarios.
+Mi proyecto de primer semestre de la universidad. Tiene como finalidad desarrollar un programa de control de inventarios.
 
 
 ## Descripción del Proyecto
