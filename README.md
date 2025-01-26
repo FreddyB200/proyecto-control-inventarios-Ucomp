@@ -9,7 +9,7 @@ El programa desarrollado en este proyecto permite gestionar las existencias medi
 
 Credenciales de administrador:
 admin user: admin
-admin password: 321
+admin password: admin
 
 ## Requisitos
 
