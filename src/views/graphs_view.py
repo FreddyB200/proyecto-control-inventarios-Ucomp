@@ -1,10 +1,12 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox, 
                              QPushButton, QLabel)
 from PyQt6.QtCore import Qt
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from services.inventory_service import InventoryService
-from services.ventas_service import VentasService
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+from src.services.inventory_service import InventoryService
+from src.config.settings import APP
+from src.services.ventas_service import VentasService
 
 class GraphsView(QWidget):
     """View for displaying various graphs and charts."""

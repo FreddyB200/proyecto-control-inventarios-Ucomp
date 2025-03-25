@@ -56,9 +56,19 @@ def migrate_database():
             )
         """)
         
-        # Update Productos table structure
+        # Create Usuarios table if it doesn't exist
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS Productos_new (
+            CREATE TABLE IF NOT EXISTS Usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                rol TEXT NOT NULL
+            )
+        """)
+        
+        # Create Productos table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Productos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
                 categoria TEXT NOT NULL,
@@ -70,25 +80,13 @@ def migrate_database():
             )
         """)
         
-        # Migrate data from old Productos table to new one
-        cursor.execute("SELECT * FROM Productos")
-        old_products = cursor.fetchall()
-        
-        for product in old_products:
+        # Insert default admin user if not exists
+        cursor.execute("SELECT * FROM Usuarios WHERE username = 'admin'")
+        if not cursor.fetchone():
             cursor.execute("""
-                INSERT INTO Productos_new (id, nombre, categoria, stock, precio)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                product[0],  # id
-                product[1],  # nombre
-                product[2],  # categoria
-                product[3],  # stock
-                product[4]   # precio
-            ))
-        
-        # Drop old table and rename new one
-        cursor.execute("DROP TABLE Productos")
-        cursor.execute("ALTER TABLE Productos_new RENAME TO Productos")
+                INSERT INTO Usuarios (username, password, rol)
+                VALUES (?, ?, ?)
+            """, ('admin', 'admin123', 'admin'))
         
         # Create indexes for better performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_productos_categoria ON Productos(categoria)")

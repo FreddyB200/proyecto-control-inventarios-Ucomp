@@ -1,207 +1,167 @@
+"""
+Servicio para gestionar las conexiones a la base de datos.
+"""
+
 import sqlite3
-from contextlib import contextmanager
-from src.config.constants import ERROR_MESSAGES
+from typing import List, Dict, Any, Optional
+from src.config.settings import DATABASE
 
 class DatabaseService:
     """
-    Servicio para gestionar las conexiones y operaciones con la base de datos.
-    Proporciona métodos para conectar, ejecutar consultas y gestionar transacciones.
+    Servicio para gestionar las conexiones y operaciones de la base de datos.
     """
-    def __init__(self, db_path):
-        """
-        Inicializa el servicio de base de datos.
-        
-        Args:
-            db_path (str): Ruta al archivo de la base de datos.
-        """
-        self.db_path = db_path
-        self.connection = None
-        
-    def connect(self):
-        """
-        Establece una conexión con la base de datos.
-        
-        Returns:
-            sqlite3.Connection: Objeto de conexión a la base de datos o None si hay error.
-        """
+    
+    def __init__(self):
+        """Inicializa el servicio de base de datos."""
+        self.db_path = DATABASE["path"]
+        self.conn = None
+        self.cursor = None
+        self._connect()
+    
+    def _connect(self):
+        """Establece la conexión a la base de datos."""
         try:
-            self.connection = sqlite3.connect(self.db_path)
-            # Configurar para que retorne filas como diccionarios
-            self.connection.row_factory = sqlite3.Row
-            return self.connection
+            self.conn = sqlite3.connect(self.db_path)
+            self.conn.row_factory = sqlite3.Row
+            self.cursor = self.conn.cursor()
         except sqlite3.Error as e:
-            print(ERROR_MESSAGES['db_connection'].format(e))
-            return None
+            raise Exception(f"Error al conectar a la base de datos: {str(e)}")
     
-    def close(self):
-        """Cierra la conexión a la base de datos si está abierta."""
-        if self.connection:
-            try:
-                self.connection.close()
-                self.connection = None
-            except sqlite3.Error as e:
-                print(ERROR_MESSAGES['db_connection'].format(e))
-    
-    def get_cursor(self):
+    def execute(self, query: str, params: tuple = None) -> Optional[sqlite3.Cursor]:
         """
-        Obtiene un cursor para ejecutar consultas.
-        
-        Returns:
-            sqlite3.Cursor: Cursor para ejecutar consultas o None si no hay conexión.
-        """
-        if not self.connection:
-            self.connect()
-        if self.connection:
-            return self.connection.cursor()
-        return None
-    
-    @contextmanager
-    def transaction(self):
-        """
-        Contexto para ejecutar operaciones dentro de una transacción.
-        Realiza commit automáticamente si no hay errores y rollback si los hay.
-        
-        Yields:
-            sqlite3.Cursor: Cursor para ejecutar consultas dentro de la transacción.
-        """
-        cursor = self.get_cursor()
-        if not cursor:
-            raise Exception("No se pudo obtener un cursor para la transacción")
-        
-        try:
-            yield cursor
-            self.connection.commit()
-        except Exception as e:
-            self.connection.rollback()
-            raise e
-    
-    def execute_query(self, query, params=None):
-        """
-        Ejecuta una consulta SQL y hace commit de los cambios.
+        Ejecuta una consulta SQL.
         
         Args:
-            query (str): Consulta SQL a ejecutar.
-            params (tuple, optional): Parámetros para la consulta. Defaults to None.
+            query: Consulta SQL a ejecutar
+            params: Parámetros para la consulta (opcional)
             
         Returns:
-            bool: True si la consulta se ejecutó correctamente, False en caso contrario.
+            Cursor de SQLite o None si hay error
         """
-        try:
-            with self.transaction() as cursor:
-                if params:
-                    cursor.execute(query, params)
-                else:
-                    cursor.execute(query)
-            return True
-        except sqlite3.Error as e:
-            print(ERROR_MESSAGES['query_execution'].format(e))
-            return False
-    
-    def fetch_one(self, query, params=None):
-        """
-        Ejecuta una consulta y devuelve la primera fila del resultado.
-        
-        Args:
-            query (str): Consulta SQL a ejecutar.
-            params (tuple, optional): Parámetros para la consulta. Defaults to None.
-            
-        Returns:
-            dict: Primera fila del resultado como diccionario o None si no hay resultados.
-        """
-        cursor = self.get_cursor()
-        if not cursor:
-            return None
-        
         try:
             if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            result = cursor.fetchone()
-            return dict(result) if result else None
+                return self.cursor.execute(query, params)
+            return self.cursor.execute(query)
         except sqlite3.Error as e:
-            print(ERROR_MESSAGES['query_execution'].format(e))
-            return None
+            raise Exception(f"Error al ejecutar consulta: {str(e)}")
     
-    def fetch_all(self, query, params=None):
+    def fetch_all(self, query: str, params: tuple = None) -> List[Dict[str, Any]]:
         """
-        Ejecuta una consulta y devuelve todas las filas del resultado.
+        Ejecuta una consulta y retorna todos los resultados.
         
         Args:
-            query (str): Consulta SQL a ejecutar.
-            params (tuple, optional): Parámetros para la consulta. Defaults to None.
+            query: Consulta SQL a ejecutar
+            params: Parámetros para la consulta (opcional)
             
         Returns:
-            list: Lista de filas como diccionarios o lista vacía si no hay resultados.
+            Lista de diccionarios con los resultados
         """
-        cursor = self.get_cursor()
-        if not cursor:
-            return []
-        
         try:
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            results = cursor.fetchall()
-            return [dict(row) for row in results] if results else []
+            cursor = self.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
         except sqlite3.Error as e:
-            print(ERROR_MESSAGES['query_execution'].format(e))
-            return []
+            raise Exception(f"Error al obtener resultados: {str(e)}")
     
-    def insert(self, table, data):
+    def fetch_one(self, query: str, params: tuple = None) -> Optional[Dict[str, Any]]:
+        """
+        Ejecuta una consulta y retorna un resultado.
+        
+        Args:
+            query: Consulta SQL a ejecutar
+            params: Parámetros para la consulta (opcional)
+            
+        Returns:
+            Diccionario con el resultado o None si no hay resultados
+        """
+        try:
+            cursor = self.execute(query, params)
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        except sqlite3.Error as e:
+            raise Exception(f"Error al obtener resultado: {str(e)}")
+    
+    def insert(self, table: str, data: Dict[str, Any]) -> int:
         """
         Inserta datos en una tabla.
         
         Args:
-            table (str): Nombre de la tabla.
-            data (dict): Datos a insertar como diccionario {columna: valor}.
+            table: Nombre de la tabla
+            data: Diccionario con los datos a insertar
             
         Returns:
-            int: ID del registro insertado o None si hay error.
+            ID del registro insertado
         """
-        columns = ', '.join(data.keys())
-        placeholders = ', '.join(['?' for _ in data])
-        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-        
         try:
-            with self.transaction() as cursor:
-                cursor.execute(query, tuple(data.values()))
-                return cursor.lastrowid
+            columns = ', '.join(data.keys())
+            placeholders = ', '.join(['?' for _ in data])
+            query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+            
+            self.execute(query, tuple(data.values()))
+            self.conn.commit()
+            
+            return self.cursor.lastrowid
         except sqlite3.Error as e:
-            print(ERROR_MESSAGES['query_execution'].format(e))
-            return None
+            raise Exception(f"Error al insertar datos: {str(e)}")
     
-    def update(self, table, data, condition, condition_params):
+    def update(self, table: str, data: Dict[str, Any], condition: str, params: tuple) -> int:
         """
-        Actualiza datos en una tabla.
+        Actualiza registros en una tabla.
         
         Args:
-            table (str): Nombre de la tabla.
-            data (dict): Datos a actualizar como diccionario {columna: valor}.
-            condition (str): Condición WHERE para la actualización.
-            condition_params (tuple): Parámetros para la condición.
+            table: Nombre de la tabla
+            data: Diccionario con los datos a actualizar
+            condition: Condición WHERE de la actualización
+            params: Parámetros para la condición
             
         Returns:
-            bool: True si la actualización fue exitosa, False en caso contrario.
+            Número de registros actualizados
         """
-        set_clause = ', '.join([f"{column} = ?" for column in data.keys()])
-        query = f"UPDATE {table} SET {set_clause} WHERE {condition}"
-        params = tuple(data.values()) + condition_params
-        
-        return self.execute_query(query, params)
+        try:
+            set_clause = ', '.join([f"{k} = ?" for k in data.keys()])
+            query = f"UPDATE {table} SET {set_clause} WHERE {condition}"
+            
+            self.execute(query, tuple(data.values()) + params)
+            self.conn.commit()
+            
+            return self.cursor.rowcount
+        except sqlite3.Error as e:
+            raise Exception(f"Error al actualizar datos: {str(e)}")
     
-    def delete(self, table, condition, condition_params):
+    def delete(self, table: str, condition: str, params: tuple) -> int:
         """
         Elimina registros de una tabla.
         
         Args:
-            table (str): Nombre de la tabla.
-            condition (str): Condición WHERE para la eliminación.
-            condition_params (tuple): Parámetros para la condición.
+            table: Nombre de la tabla
+            condition: Condición WHERE para la eliminación
+            params: Parámetros para la condición
             
         Returns:
-            bool: True si la eliminación fue exitosa, False en caso contrario.
+            Número de registros eliminados
         """
-        query = f"DELETE FROM {table} WHERE {condition}"
-        return self.execute_query(query, condition_params)
+        try:
+            query = f"DELETE FROM {table} WHERE {condition}"
+            
+            self.execute(query, params)
+            self.conn.commit()
+            
+            return self.cursor.rowcount
+        except sqlite3.Error as e:
+            raise Exception(f"Error al eliminar datos: {str(e)}")
+    
+    def begin_transaction(self):
+        """Inicia una transacción."""
+        self.conn.execute("BEGIN TRANSACTION")
+    
+    def commit(self):
+        """Confirma una transacción."""
+        self.conn.commit()
+    
+    def rollback(self):
+        """Revierte una transacción."""
+        self.conn.rollback()
+    
+    def __del__(self):
+        """Cierra la conexión cuando se destruye el objeto."""
+        if self.conn:
+            self.conn.close()

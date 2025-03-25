@@ -2,9 +2,10 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
                              QPushButton, QLabel, QTableWidget, QTableWidgetItem,
                              QDateEdit, QMessageBox)
 from PyQt6.QtCore import Qt, QDate
-from services.inventory_service import InventoryService
-from services.ventas_service import VentasService
-from services.reports_service import ReportsService
+from src.services.inventory_service import InventoryService
+from src.services.ventas_service import VentasService
+from src.config.settings import APP
+from src.services.reports_service import ReportsService
 
 class ReportsView(QWidget):
     """View for generating and displaying various reports."""

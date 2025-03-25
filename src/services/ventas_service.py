@@ -4,6 +4,8 @@ Servicio para gestionar las ventas de productos.
 
 from datetime import datetime
 from src.config.constants import DB_TABLES, SQL_QUERIES, ERROR_MESSAGES, SUCCESS_MESSAGES
+from src.services.database_service import DatabaseService
+from src.services.inventory_service import InventoryService
 
 class VentasService:
     """
@@ -11,16 +13,12 @@ class VentasService:
     Proporciona métodos para registrar ventas, consultar historial y generar reportes.
     """
     
-    def __init__(self, db_service, inventory_service):
+    def __init__(self):
         """
         Inicializa el servicio de ventas.
-        
-        Args:
-            db_service (DatabaseService): Servicio de base de datos.
-            inventory_service (InventoryService): Servicio de inventario.
         """
-        self.db_service = db_service
-        self.inventory_service = inventory_service
+        self.db_service = DatabaseService()
+        self.inventory_service = InventoryService()
     
     def register_sale(self, sale_data):
         """
@@ -59,30 +57,38 @@ class VentasService:
                 'ID_producto': product_id,
                 'Cantidad': cantidad,
                 'Precio_unitario': precio_unitario,
-                'Total': total
+                'Total': total,
+                'ID_usuario': sale_data.get('ID_usuario', 1)  # Usuario por defecto si no se especifica
             }
             
             # Iniciar transacción
-            with self.db_service.transaction() as cursor:
+            self.db_service.begin_transaction()
+            
+            try:
                 # Registrar venta
-                venta_id = self.db_service.insert(DB_TABLES['ventas'], venta_data)
+                venta_id = self.db_service.insert('Ventas', venta_data)
                 
                 if not venta_id:
+                    self.db_service.rollback()
                     return {'error': 'Error al registrar la venta'}
                 
                 # Actualizar stock
                 new_stock = product['Cantidad_en_stock'] - cantidad
-                self.inventory_service.update_product(
-                    product_id,
-                    {'Cantidad_en_stock': new_stock}
-                )
-            
-            return {
-                'success': True,
-                'message': SUCCESS_MESSAGES['sale_completed'],
-                'sale_id': venta_id,
-                'total': total
-            }
+                self.inventory_service.update_product_stock(product_id, new_stock)
+                
+                # Confirmar transacción
+                self.db_service.commit()
+                
+                return {
+                    'success': True,
+                    'message': SUCCESS_MESSAGES['sale_completed'],
+                    'sale_id': venta_id,
+                    'total': total
+                }
+            except Exception as e:
+                self.db_service.rollback()
+                raise e
+                
         except Exception as e:
             return {'error': f'Error al registrar la venta: {str(e)}'}
     
@@ -131,8 +137,8 @@ class VentasService:
             
             result = self.db_service.fetch_one(query, (start_date, end_date))
             
-            if result and 'total_ventas' in result:
-                return float(result['total_ventas'] or 0)
+            if result and result['total_ventas']:
+                return float(result['total_ventas'])
             
             return 0.0
         except Exception as e:
@@ -257,16 +263,16 @@ class VentasService:
         """
         try:
             # Obtener datos de la venta
-            venta = self.db_service.fetch_one(
-                "SELECT * FROM Ventas WHERE ID = ?",
-                (sale_id,)
-            )
+            query = "SELECT * FROM Ventas WHERE ID = ?"
+            venta = self.db_service.fetch_one(query, (sale_id,))
             
             if not venta:
                 return {'error': 'Venta no encontrada'}
             
             # Iniciar transacción
-            with self.db_service.transaction() as cursor:
+            self.db_service.begin_transaction()
+            
+            try:
                 # Restaurar stock
                 product_id = venta['ID_producto']
                 cantidad = venta['Cantidad']
@@ -274,20 +280,25 @@ class VentasService:
                 product = self.inventory_service.get_product_by_id(product_id)
                 if product:
                     new_stock = product['Cantidad_en_stock'] + cantidad
-                    self.inventory_service.update_product(
-                        product_id,
-                        {'Cantidad_en_stock': new_stock}
-                    )
+                    self.inventory_service.update_product_stock(product_id, new_stock)
                 
                 # Eliminar venta
-                result = self.db_service.delete(DB_TABLES['ventas'], sale_id)
+                result = self.db_service.delete('Ventas', 'ID = ?', (sale_id,))
                 
                 if not result:
+                    self.db_service.rollback()
                     return {'error': 'Error al eliminar la venta'}
-            
-            return {
-                'success': True,
-                'message': 'Venta eliminada correctamente'
-            }
+                
+                # Confirmar transacción
+                self.db_service.commit()
+                
+                return {
+                    'success': True,
+                    'message': 'Venta eliminada correctamente'
+                }
+            except Exception as e:
+                self.db_service.rollback()
+                raise e
+                
         except Exception as e:
             return {'error': f'Error al eliminar la venta: {str(e)}'}

@@ -2,11 +2,12 @@
 Servicio de autenticación para gestionar usuarios, login y registro.
 """
 
-from typing import Optional
+from typing import Optional, Tuple, Dict
 import sqlite3
+import bcrypt
 from src.config.constants import ERROR_MESSAGES, SUCCESS_MESSAGES, SQL_QUERIES, DB_TABLES
 from src.config.settings import SECURITY
-from utils.security import hash_password, verify_password
+from src.utils.security import hash_password, verify_password
 
 class AuthService:
     """
@@ -14,14 +15,12 @@ class AuthService:
     Proporciona métodos para verificar credenciales, registrar usuarios y recuperar contraseñas.
     """
     
-    def __init__(self, db_path: str):
+    def __init__(self):
         """
         Inicializa el servicio de autenticación.
-        
-        Args:
-            db_path (str): Ruta a la base de datos.
         """
-        self.db_path = db_path
+        self.conn = sqlite3.connect("src/inventario.db")
+        self.cursor = self.conn.cursor()
         self.login_attempts = {}  # Diccionario para controlar intentos de login por usuario
     
     def _get_connection(self):
@@ -31,7 +30,7 @@ class AuthService:
         Returns:
             sqlite3.Connection: Conexión a la base de datos.
         """
-        return sqlite3.connect(self.db_path)
+        return sqlite3.connect("src/inventario.db")
     
     def _hash_password(self, password):
         """
@@ -66,22 +65,26 @@ class AuthService:
         if username not in self.login_attempts:
             self.login_attempts[username] = 0
         
-        # En una implementación real, se debería verificar el hash de la contraseña
-        # password_hash = self._hash_password(password)
-        
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT password FROM Usuarios WHERE Usuario = ?",
+                    "SELECT ID, Usuario, password, Rol FROM Usuarios WHERE Usuario = ?",
                     (username,)
                 )
                 result = cursor.fetchone()
                 
-                if result and verify_password(password, result[0]):
+                if result and verify_password(password, result[2]):
                     # Reiniciar contador de intentos
                     self.login_attempts[username] = 0
-                    return {'success': True, 'user': username}
+                    return {
+                        'success': True, 
+                        'user': {
+                            'id': result[0],
+                            'username': result[1],
+                            'rol': result[3]
+                        }
+                    }
                 else:
                     # Incrementar contador de intentos
                     self.login_attempts[username] += 1
@@ -133,10 +136,10 @@ class AuthService:
                 hashed_password = hash_password(password)
                 cursor.execute(
                     """
-                    INSERT INTO Usuarios (Usuario, password, Nombre, Apellido)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO Usuarios (Usuario, password, Nombre, Apellido, Rol)
+                    VALUES (?, ?, ?, ?, ?)
                     """,
-                    (username, hashed_password, nombre, apellido)
+                    (username, hashed_password, nombre, apellido, 'user')
                 )
                 conn.commit()
                 return True
@@ -154,9 +157,6 @@ class AuthService:
         Returns:
             dict: Resultado de la operación.
         """
-        # En una implementación real, se debería almacenar el hash de la contraseña
-        # password_hash = self._hash_password(new_password)
-        
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -223,3 +223,101 @@ class AuthService:
                 return True
         except sqlite3.Error as e:
             raise Exception(f"Error en la base de datos: {str(e)}")
+
+    def login(self, username: str, password: str) -> Tuple[bool, str]:
+        """
+        Authenticate a user.
+        
+        Args:
+            username: The username to authenticate
+            password: The password to verify
+            
+        Returns:
+            Tuple containing:
+                - bool: Whether authentication was successful
+                - str: Success/error message
+        """
+        try:
+            self.cursor.execute(SQL_QUERIES["get_user"], (username,))
+            user = self.cursor.fetchone()
+            
+            if not user:
+                return False, ERROR_MESSAGES["invalid_credentials"]
+                
+            stored_password = user[2]  # password is in third column
+            
+            if not bcrypt.checkpw(password.encode(), stored_password.encode()):
+                return False, ERROR_MESSAGES["invalid_credentials"]
+                
+            return True, SUCCESS_MESSAGES["login_success"]
+            
+        except sqlite3.Error as e:
+            return False, f"{ERROR_MESSAGES['db_error']}: {str(e)}"
+            
+    def register(self, username: str, password: str, rol: str = "user") -> Tuple[bool, str]:
+        """
+        Register a new user.
+        
+        Args:
+            username: The username to register
+            password: The password to hash and store
+            rol: The role to assign to the user (default: "user")
+            
+        Returns:
+            Tuple containing:
+                - bool: Whether registration was successful
+                - str: Success/error message
+        """
+        try:
+            # Check if username already exists
+            self.cursor.execute(SQL_QUERIES["get_user"], (username,))
+            if self.cursor.fetchone():
+                return False, ERROR_MESSAGES["user_exists"]
+                
+            # Hash password
+            hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+            
+            # Insert new user
+            self.cursor.execute(SQL_QUERIES["create_user"], (username, hashed.decode(), rol))
+            self.conn.commit()
+            
+            return True, SUCCESS_MESSAGES["register_success"]
+            
+        except sqlite3.Error as e:
+            return False, f"{ERROR_MESSAGES['db_error']}: {str(e)}"
+            
+    def change_password(self, username: str, old_password: str, new_password: str) -> Tuple[bool, str]:
+        """
+        Change a user's password.
+        
+        Args:
+            username: The username whose password to change
+            old_password: The current password
+            new_password: The new password to set
+            
+        Returns:
+            Tuple containing:
+                - bool: Whether password change was successful
+                - str: Success/error message
+        """
+        try:
+            # Verify current credentials
+            success, message = self.login(username, old_password)
+            if not success:
+                return False, message
+                
+            # Hash new password
+            hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
+            
+            # Update password
+            self.cursor.execute(SQL_QUERIES["update_password"], (hashed.decode(), username))
+            self.conn.commit()
+            
+            return True, SUCCESS_MESSAGES["password_changed"]
+            
+        except sqlite3.Error as e:
+            return False, f"{ERROR_MESSAGES['db_error']}: {str(e)}"
+            
+    def __del__(self):
+        """Close database connection when object is destroyed."""
+        self.conn.close()

@@ -1,8 +1,104 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
                              QTableWidget, QTableWidgetItem, QLabel, QLineEdit,
-                             QComboBox, QSpinBox, QDoubleSpinBox, QMessageBox)
-from PyQt6.QtCore import Qt
-from services.inventory_service import InventoryService
+                             QComboBox, QSpinBox, QDoubleSpinBox, QMessageBox,
+                             QDialog, QFormLayout, QDateEdit)
+from PyQt6.QtCore import Qt, QDate
+from PyQt6.QtGui import QIcon
+from src.services.inventory_service import InventoryService
+from src.config.settings import APP, STOCK
+from datetime import datetime
+
+class AddProductDialog(QDialog):
+    """Dialog for adding/editing products."""
+    
+    def __init__(self, parent=None, product=None):
+        """Initialize the dialog."""
+        super().__init__(parent)
+        self.product = product
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup the dialog UI."""
+        self.setWindowTitle("Agregar Producto" if not self.product else "Editar Producto")
+        self.setFixedWidth(400)
+        
+        layout = QFormLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Name field
+        self.name_edit = QLineEdit()
+        if self.product:
+            self.name_edit.setText(self.product[1])
+        layout.addRow("Nombre:", self.name_edit)
+        
+        # Category field
+        self.category_combo = QComboBox()
+        self.category_combo.addItems(["Alimentos", "Bebidas", "Limpieza", "Otros"])
+        if self.product:
+            self.category_combo.setCurrentText(self.product[2])
+        layout.addRow("Categoría:", self.category_combo)
+        
+        # Stock field
+        self.stock_spin = QSpinBox()
+        self.stock_spin.setRange(0, STOCK["max_stock"])
+        if self.product:
+            self.stock_spin.setValue(self.product[3])
+        layout.addRow("Stock:", self.stock_spin)
+        
+        # Price field
+        self.price_spin = QDoubleSpinBox()
+        self.price_spin.setRange(0, 1000000)
+        self.price_spin.setDecimals(2)
+        self.price_spin.setPrefix("$ ")
+        if self.product:
+            self.price_spin.setValue(self.product[4])
+        layout.addRow("Precio:", self.price_spin)
+        
+        # Expiration date field
+        self.date_edit = QDateEdit()
+        self.date_edit.setCalendarPopup(True)
+        self.date_edit.setDate(QDate.currentDate())
+        if self.product and self.product[6]:
+            self.date_edit.setDate(QDate.fromString(self.product[6], "yyyy-MM-dd"))
+        layout.addRow("Fecha de vencimiento:", self.date_edit)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        save_button = QPushButton("Guardar")
+        save_button.clicked.connect(self.accept)
+        save_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {APP['theme']['success_color']};
+                color: white;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                background-color: {APP['theme']['primary_color']};
+            }}
+        """)
+        button_layout.addWidget(save_button)
+        
+        cancel_button = QPushButton("Cancelar")
+        cancel_button.clicked.connect(self.reject)
+        cancel_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {APP['theme']['error_color']};
+                color: white;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                background-color: {APP['theme']['warning_color']};
+            }}
+        """)
+        button_layout.addWidget(cancel_button)
+        
+        layout.addRow("", button_layout)
 
 class InventoryView(QWidget):
     """Inventory management view with CRUD operations."""
@@ -75,11 +171,11 @@ class InventoryView(QWidget):
             
             for row, product in enumerate(products):
                 # Add product data
-                self.table.setItem(row, 0, QTableWidgetItem(str(product['id'])))
-                self.table.setItem(row, 1, QTableWidgetItem(product['nombre']))
-                self.table.setItem(row, 2, QTableWidgetItem(product['categoria']))
-                self.table.setItem(row, 3, QTableWidgetItem(str(product['stock'])))
-                self.table.setItem(row, 4, QTableWidgetItem(f"${product['precio']:.2f}"))
+                self.table.setItem(row, 0, QTableWidgetItem(str(product['ID'])))
+                self.table.setItem(row, 1, QTableWidgetItem(product['Nombre']))
+                self.table.setItem(row, 2, QTableWidgetItem(product['Categoria']))
+                self.table.setItem(row, 3, QTableWidgetItem(str(product['Cantidad_en_stock'])))
+                self.table.setItem(row, 4, QTableWidgetItem(f"${product['Precio']:.2f}"))
                 
                 # Add action buttons
                 actions_widget = QWidget()
@@ -98,6 +194,7 @@ class InventoryView(QWidget):
                 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al cargar el inventario: {str(e)}")
+            print(f"Error detallado: {str(e)}")  # Para debugging
             
     def add_product(self):
         """Add a new product to the inventory."""
@@ -124,27 +221,39 @@ class InventoryView(QWidget):
     def edit_product(self, product):
         """Edit an existing product."""
         try:
-            # TODO: Implement edit dialog
-            pass
+            dialog = AddProductDialog(self, product)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                updated_data = {
+                    'Nombre': dialog.name_edit.text(),
+                    'Categoria': dialog.category_combo.currentText(),
+                    'Cantidad_en_stock': dialog.stock_spin.value(),
+                    'Precio': dialog.price_spin.value()
+                }
+                
+                self.inventory_service.update_product(product['ID'], updated_data)
+                self.load_inventory()
+                QMessageBox.information(self, "Éxito", "Producto actualizado exitosamente")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al editar el producto: {str(e)}")
+            print(f"Error detallado: {str(e)}")  # Para debugging
             
     def delete_product(self, product):
         """Delete a product from the inventory."""
         try:
             reply = QMessageBox.question(
                 self, "Confirmar", 
-                f"¿Está seguro de eliminar el producto {product['nombre']}?",
+                f"¿Está seguro de eliminar el producto {product['Nombre']}?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
             
             if reply == QMessageBox.StandardButton.Yes:
-                self.inventory_service.delete_product(product['id'])
+                self.inventory_service.delete_product(product['ID'])
                 self.load_inventory()
                 QMessageBox.information(self, "Éxito", "Producto eliminado correctamente")
                 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al eliminar el producto: {str(e)}")
+            print(f"Error detallado: {str(e)}")  # Para debugging
             
     def filter_inventory(self):
         """Filter inventory based on search text."""

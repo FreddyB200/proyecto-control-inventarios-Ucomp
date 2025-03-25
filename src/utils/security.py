@@ -1,47 +1,29 @@
-import hashlib
-import os
+"""Security utilities for password hashing and verification."""
 import bcrypt
 
 def hash_password(password: str) -> str:
-    """
-    Hash a password using bcrypt.
+    """Hash a password using bcrypt.
     
     Args:
-        password: The password to hash
+        password: The plain text password to hash
         
     Returns:
-        str: The hashed password
+        The hashed password as a string
     """
-    # Convert password to bytes
-    password_bytes = password.encode('utf-8')
-    
-    # Generate salt and hash
     salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password_bytes, salt)
-    
-    # Return the hash as a string
-    return hashed.decode('utf-8')
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
-def verify_password(password: str, hashed_password: str) -> bool:
-    """
-    Verify a password against its hash.
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against its hash.
     
     Args:
-        password: The password to verify
-        hashed_password: The hashed password to check against
+        password: The plain text password to verify
+        hashed: The hashed password to check against
         
     Returns:
-        bool: True if password matches, False otherwise
+        True if the password matches, False otherwise
     """
-    try:
-        # Convert strings to bytes
-        password_bytes = password.encode('utf-8')
-        hashed_bytes = hashed_password.encode('utf-8')
-        
-        # Check if password matches
-        return bcrypt.checkpw(password_bytes, hashed_bytes)
-    except Exception:
-        return False
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 def generate_token(length: int = 32) -> str:
     """

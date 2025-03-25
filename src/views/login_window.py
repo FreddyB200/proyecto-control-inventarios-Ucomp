@@ -1,108 +1,142 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QPushButton, QFrame)
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QMessageBox, QDialog
+)
 from PyQt6.QtCore import Qt
-from .base_window import BaseWindow
-from services.auth_service import AuthService
+from PyQt6.QtGui import QIcon, QPixmap
 
-class LoginWindow(BaseWindow):
-    """Login window implementation using PyQt6."""
+from src.services.auth_service import AuthService
+from src.config.settings import APP
+from src.views.main_window import MainWindow
+from src.views.register_window import RegisterWindow
+
+class LoginWindow(QMainWindow):
+    """Login window for user authentication."""
     
-    def __init__(self, auth_service: AuthService):
+    def __init__(self):
+        """Initialize the login window."""
         super().__init__()
-        self.auth_service = auth_service
-        self.setup_login_ui()
         
-    def setup_login_ui(self):
-        """Setup the login window UI."""
-        self.setWindowTitle("Inicio de Sesión")
-        self.setFixedSize(400, 300)
+        # Initialize services
+        self.auth_service = AuthService()
         
-        # Main container
-        container = QFrame()
-        container.setObjectName("loginContainer")
-        container.setStyleSheet("""
-            #loginContainer {
-                background-color: white;
-                border-radius: 8px;
-                padding: 20px;
+        # Set window properties
+        self.setWindowTitle(f"{APP['name']} - Login")
+        self.setFixedSize(400, 500)
+        
+        # Create central widget and layout
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+        layout.setSpacing(20)
+        layout.setContentsMargins(40, 40, 40, 40)
+        
+        # Add logo
+        logo_label = QLabel()
+        logo_pixmap = QPixmap("assets/logo.png")
+        if not logo_pixmap.isNull():
+            logo_label.setPixmap(logo_pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+            logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(logo_label)
+        
+        # Add welcome message
+        welcome_label = QLabel("Bienvenido")
+        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        welcome_label.setStyleSheet(f"color: {APP['theme']['primary_color']}; font-size: 24px; font-weight: bold;")
+        layout.addWidget(welcome_label)
+        
+        # Add username field
+        self.username_edit = QLineEdit()
+        self.username_edit.setPlaceholderText("Usuario")
+        self.username_edit.setStyleSheet("""
+            QLineEdit {
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border-color: #2196F3;
             }
         """)
+        layout.addWidget(self.username_edit)
         
-        # Layout
-        layout = QVBoxLayout(container)
-        layout.setSpacing(15)
-        layout.setContentsMargins(20, 20, 20, 20)
+        # Add password field
+        self.password_edit = QLineEdit()
+        self.password_edit.setPlaceholderText("Contraseña")
+        self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_edit.setStyleSheet(self.username_edit.styleSheet())
+        layout.addWidget(self.password_edit)
         
-        # Title
-        title = QLabel("Iniciar Sesión")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #333;")
-        layout.addWidget(title)
+        # Add login button
+        login_button = QPushButton("Iniciar Sesión")
+        login_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {APP['theme']['primary_color']};
+                color: white;
+                padding: 10px;
+                border: none;
+                border-radius: 5px;
+                font-size: 14px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {APP['theme']['secondary_color']};
+            }}
+        """)
+        login_button.clicked.connect(self.login)
+        layout.addWidget(login_button)
         
-        # Username
-        username_layout = QHBoxLayout()
-        username_label = QLabel("Usuario:")
-        self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Ingrese su usuario")
-        username_layout.addWidget(username_label)
-        username_layout.addWidget(self.username_input)
-        layout.addLayout(username_layout)
+        # Add register link
+        register_layout = QHBoxLayout()
+        register_label = QLabel("¿No tienes una cuenta?")
+        register_button = QPushButton("Registrarse")
+        register_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                color: #2196F3;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                color: #FFC107;
+            }
+        """)
+        register_button.clicked.connect(self.show_register)
+        register_layout.addWidget(register_label)
+        register_layout.addWidget(register_button)
+        layout.addLayout(register_layout)
         
-        # Password
-        password_layout = QHBoxLayout()
-        password_label = QLabel("Contraseña:")
-        self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Ingrese su contraseña")
-        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        password_layout.addWidget(password_label)
-        password_layout.addWidget(self.password_input)
-        layout.addLayout(password_layout)
+        # Add stretch to push everything to the top
+        layout.addStretch()
         
-        # Buttons
-        buttons_layout = QHBoxLayout()
-        
-        self.login_button = QPushButton("Iniciar Sesión")
-        self.login_button.clicked.connect(self.handle_login)
-        buttons_layout.addWidget(self.login_button)
-        
-        self.register_button = QPushButton("Registrarse")
-        self.register_button.clicked.connect(self.handle_register)
-        buttons_layout.addWidget(self.register_button)
-        
-        layout.addLayout(buttons_layout)
-        
-        # Recovery link
-        self.recovery_link = QPushButton("¿Olvidó su contraseña?")
-        self.recovery_link.setStyleSheet("color: #4CAF50; text-decoration: underline;")
-        self.recovery_link.clicked.connect(self.handle_password_recovery)
-        layout.addWidget(self.recovery_link)
-        
-        self.layout.addWidget(container)
-        
-    def handle_login(self):
+    def login(self):
         """Handle login button click."""
-        username = self.username_input.text()
-        password = self.password_input.text()
-        
-        if not username or not password:
-            self.show_error("Por favor, complete todos los campos")
-            return
-            
         try:
-            if self.auth_service.login(username, password):
-                self.show_success("Inicio de sesión exitoso")
-                # TODO: Navigate to main window
-            else:
-                self.show_error("Usuario o contraseña incorrectos")
-        except Exception as e:
-            self.show_error(f"Error al iniciar sesión: {str(e)}")
+            username = self.username_edit.text().strip()
+            password = self.password_edit.text().strip()
             
-    def handle_register(self):
-        """Handle register button click."""
-        # TODO: Open register window
-        pass
-        
-    def handle_password_recovery(self):
-        """Handle password recovery link click."""
-        # TODO: Open password recovery window
-        pass 
+            if not username or not password:
+                QMessageBox.warning(self, "Error", "Por favor ingrese usuario y contraseña")
+                return
+                
+            result = self.auth_service.verify_credentials(username, password)
+            
+            if 'success' in result:
+                self.main_window = MainWindow()
+                self.main_window.show()
+                self.close()
+            else:
+                QMessageBox.warning(self, "Error", result.get('error', 'Error al iniciar sesión'))
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al iniciar sesión: {str(e)}")
+            
+    def show_register(self):
+        """Show registration dialog."""
+        try:
+            register_window = RegisterWindow(self)
+            if register_window.exec() == QDialog.DialogCode.Accepted:
+                # Limpiar campos después de un registro exitoso
+                self.username_edit.clear()
+                self.password_edit.clear()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al mostrar ventana de registro: {str(e)}") 

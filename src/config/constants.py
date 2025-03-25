@@ -3,53 +3,93 @@ Constantes utilizadas en toda la aplicación.
 Este módulo contiene constantes que no cambian durante la ejecución de la aplicación.
 """
 
-# Constantes para mensajes de error
+# Error messages
 ERROR_MESSAGES = {
-    'db_connection': 'Ha ocurrido un error al intentar conectar con la base de datos: {}',
-    'query_execution': 'Error al ejecutar la consulta: {}',
-    'login_failed': 'Usuario o contraseña incorrectos. Intentos restantes: {}',
-    'login_blocked': 'Demasiados intentos fallidos. El acceso está bloqueado.',
-    'empty_fields': 'Ingrese todos los datos.',
-    'invalid_date': 'Formato de fecha inválido. Use AAAA-MM-DD.',
-    'invalid_number': 'Ingrese un valor numérico válido.',
-    'product_not_found': 'Producto no encontrado.',
-    'provider_not_found': 'Proveedor no encontrado.',
-    'product_add_error': 'Error al agregar producto: {}',
-    'product_update_error': 'Error al actualizar producto: {}',
-    'product_delete_error': 'Error al eliminar producto: {}',
-    'no_selection': 'Por favor, seleccione un elemento para continuar.'
+    "db_error": "Error en la base de datos",
+    "invalid_credentials": "Usuario o contraseña inválidos",
+    "user_exists": "El usuario ya existe",
+    "password_mismatch": "Las contraseñas no coinciden",
+    "insufficient_stock": "Stock insuficiente",
+    "invalid_quantity": "Cantidad inválida",
+    "invalid_price": "Precio inválido",
+    "product_exists": "El producto ya existe",
+    "product_not_found": "Producto no encontrado",
+    "supplier_exists": "El proveedor ya existe",
+    "supplier_not_found": "Proveedor no encontrado",
+    "sale_not_found": "Venta no encontrada",
+    "invalid_date": "Fecha inválida"
 }
 
-# Constantes para mensajes de éxito
+# Success messages
 SUCCESS_MESSAGES = {
-    'product_added': 'Producto agregado correctamente',
-    'product_updated': 'Producto actualizado correctamente',
-    'product_deleted': 'Producto eliminado correctamente',
-    'user_added': 'Usuario registrado correctamente',
-    'password_updated': 'Contraseña actualizada correctamente',
-    'sale_completed': 'Venta registrada correctamente'
+    "login_success": "Inicio de sesión exitoso",
+    "register_success": "Usuario registrado exitosamente",
+    "password_changed": "Contraseña cambiada exitosamente",
+    "product_added": "Producto agregado exitosamente",
+    "product_updated": "Producto actualizado exitosamente",
+    "product_deleted": "Producto eliminado exitosamente",
+    "stock_updated": "Stock actualizado exitosamente",
+    "sale_registered": "Venta registrada exitosamente",
+    "supplier_added": "Proveedor agregado exitosamente",
+    "supplier_updated": "Proveedor actualizado exitosamente",
+    "supplier_deleted": "Proveedor eliminado exitosamente"
 }
 
-# Constantes para consultas SQL
+# SQL Queries
 SQL_QUERIES = {
-    'get_user': 'SELECT Nombre FROM Usuarios WHERE Usuario=? AND password=?',
-    'get_products': 'SELECT ID, Nombre, Precio, Fecha_vencimiento, cantidad_en_stock FROM Producto',
-    'search_products': 'SELECT ID, Nombre, Precio, Fecha_vencimiento, cantidad_en_stock FROM Producto WHERE Nombre LIKE ?',
-    'get_providers': 'SELECT razon_social, NIT FROM Proveedor',
-    'add_product': 'INSERT INTO Producto (Nombre, Precio, Fecha_vencimiento, Cantidad_en_stock, NIT_proveedor) VALUES (?, ?, ?, ?, ?)',
-    'update_product': 'UPDATE Producto SET Nombre=?, Precio=?, Fecha_vencimiento=?, Cantidad_en_stock=?, NIT_proveedor=? WHERE ID=?',
-    'delete_product': 'DELETE FROM Producto WHERE ID=?',
-    'low_stock_products': 'SELECT Nombre FROM Producto WHERE Cantidad_en_stock < ?',
-    'expiring_products': 'SELECT Nombre, Precio FROM Producto WHERE Fecha_vencimiento BETWEEN ? AND ?',
-    'update_product_price': 'UPDATE Producto SET Precio = ? WHERE Nombre = ?'
+    "get_user": "SELECT * FROM Usuarios WHERE username = ?",
+    "create_user": "INSERT INTO Usuarios (username, password, rol) VALUES (?, ?, ?)",
+    "update_password": "UPDATE Usuarios SET password = ? WHERE username = ?",
+    "get_product": "SELECT * FROM Productos WHERE id = ?",
+    "get_products": "SELECT * FROM Productos",
+    "get_products_by_category": "SELECT * FROM Productos WHERE categoria = ?",
+    "create_product": """
+        INSERT INTO Productos (nombre, categoria, stock, precio, proveedor_id, fecha_vencimiento)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """,
+    "update_product": """
+        UPDATE Productos 
+        SET nombre = ?, categoria = ?, stock = ?, precio = ?, 
+            proveedor_id = ?, fecha_vencimiento = ?
+        WHERE id = ?
+    """,
+    "delete_product": "DELETE FROM Productos WHERE id = ?",
+    "update_stock": "UPDATE Productos SET stock = ? WHERE id = ?",
+    "register_stock_movement": """
+        INSERT INTO MovimientosStock (producto_id, cantidad, tipo, fecha)
+        VALUES (?, ?, ?, ?)
+    """,
+    "get_stock_movements": "SELECT * FROM MovimientosStock WHERE producto_id = ?",
+    "create_sale": "INSERT INTO Ventas (fecha, total, usuario_id) VALUES (?, ?, ?)",
+    "create_sale_detail": """
+        INSERT INTO DetalleVentas (venta_id, producto_id, cantidad, precio_unitario, subtotal)
+        VALUES (?, ?, ?, ?, ?)
+    """,
+    "get_sale": "SELECT * FROM Ventas WHERE id = ?",
+    "get_sale_details": "SELECT * FROM DetalleVentas WHERE venta_id = ?",
+    "get_sales_by_date": "SELECT * FROM Ventas WHERE fecha BETWEEN ? AND ?",
+    "get_supplier": "SELECT * FROM Proveedores WHERE id = ?",
+    "get_suppliers": "SELECT * FROM Proveedores",
+    "create_supplier": """
+        INSERT INTO Proveedores (nombre, nit, direccion, telefono, email)
+        VALUES (?, ?, ?, ?, ?)
+    """,
+    "update_supplier": """
+        UPDATE Proveedores 
+        SET nombre = ?, nit = ?, direccion = ?, telefono = ?, email = ?
+        WHERE id = ?
+    """,
+    "delete_supplier": "DELETE FROM Proveedores WHERE id = ?"
 }
 
-# Constantes para tablas de la base de datos
+# Database table names
 DB_TABLES = {
-    'usuarios': 'Usuarios',
-    'productos': 'Producto',
-    'proveedores': 'Proveedor',
-    'ventas': 'Ventas'
+    "users": "Usuarios",
+    "products": "Productos",
+    "stock_movements": "MovimientosStock",
+    "sales": "Ventas",
+    "sale_details": "DetalleVentas",
+    "suppliers": "Proveedores"
 }
 
 # Constantes para campos de formularios
