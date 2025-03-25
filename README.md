@@ -1,29 +1,21 @@
-# Sistema de Control de Inventarios
+# 📦 Sistema de Control de Inventarios
 
-Sistema de control de inventarios desarrollado con PyQt6 y SQLite.
+Aplicación de escritorio desarrollada con **PyQt6 y SQLite** para la gestión eficiente de inventarios, ventas y reportes. Ofrece una interfaz moderna, autenticación segura y herramientas avanzadas para la administración de productos. 🚀  
 
-## Características
+## ✨ Características
 
-- Interfaz gráfica moderna y responsiva con PyQt6
-- Gestión completa de inventario
-- Control de ventas
-- Gestión de proveedores
-- Generación de gráficos y reportes
-- Exportación de datos a Excel y PDF
-- Sistema de autenticación seguro
-- Base de datos SQLite
+✅ **Interfaz gráfica moderna** con PyQt6  
+✅ **Gestión de inventario**: agregar, editar y eliminar productos  
+✅ **Control de ventas** y detalle de transacciones  
+✅ **Reportes y gráficos** de stock, ventas y movimientos  
+✅ **Exportación de datos** a Excel y PDF  
+✅ **Sistema de autenticación** seguro con contraseñas encriptadas  
+✅ **Base de datos SQLite** ligera y eficiente  
 
-## Requisitos
+## 📌 Requisitos
 
-- Python 3.8 o superior
-- PyQt6
-- Matplotlib
-- Pandas
-- OpenPyXL
-- ReportLab
-- SQLAlchemy
-- bcrypt
-
+- Python 3.8 o superior  
+- PyQt6, Matplotlib, Pandas, OpenPyXL, ReportLab, SQLAlchemy, bcrypt  
 ## Instalación
 
 1. Clonar el repositorio:
@@ -54,41 +46,7 @@ python src/main.py
 - Usuario: admin
 - Contraseña: admin123
 
-## Estructura del Proyecto
 
-```
-src/
-├── config/
-│   └── __init__.py
-├── controllers/
-│   ├── __init__.py
-│   └── main_controller.py
-├── models/
-│   ├── __init__.py
-│   ├── product.py
-│   ├── category.py
-│   ├── user.py
-│   └── database.py
-├── services/
-│   ├── __init__.py
-│   ├── auth_service.py
-│   ├── inventory_service.py
-│   ├── sales_service.py
-│   └── reports_service.py
-├── utils/
-│   ├── __init__.py
-│   ├── security.py
-│   └── database_migration.py
-├── views/
-│   ├── __init__.py
-│   ├── base_window.py
-│   ├── login_window.py
-│   ├── main_window.py
-│   ├── inventory_view.py
-│   ├── graphs_view.py
-│   └── reports_view.py
-└── main.py
-```
 
 ## Funcionalidades Principales
 
@@ -103,13 +61,21 @@ src/
 - Detalle de ventas
 - Historial de transacciones
 
-### Reportes y Gráficos
-- Reporte de inventario bajo
-- Ventas por período
-- Productos más vendidos
-- Movimientos de stock
-- Valor total del inventario
-- Exportación a Excel y PDF
+## 📊 Funcionalidades
+
+### 🔹 Gestión de Inventario  
+- 📦 Agregar, editar y eliminar productos  
+- 🔍 Control de stock y categorización de productos  
+- 📜 Historial de movimientos  
+
+### 🔹 Ventas  
+- 🛒 Registro y detalle de ventas  
+- 💰 Historial de transacciones  
+
+### 🔹 Reportes y Análisis  
+- 📉 Reporte de inventario bajo  
+- 📊 Ventas por período y productos más vendidos  
+- 📂 Exportación de reportes a **Excel** y **PDF**
 
 ### Seguridad
 - Autenticación de usuarios
