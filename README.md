@@ -20,7 +20,7 @@ Aplicación de escritorio desarrollada con **PyQt6 y SQLite** para la gestión e
 
 1. Clonar el repositorio:
 ```bash
-git clone https://github.com/tu-usuario/proyecto-control-inventarios-Ucomp.git
+git clone https://github.com/freddyB200/proyecto-control-inventarios-Ucomp.git
 cd proyecto-control-inventarios-Ucomp
 ```
 
