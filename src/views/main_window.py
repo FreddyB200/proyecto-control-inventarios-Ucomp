@@ -97,6 +97,9 @@ class MainWindow(QMainWindow):
         # Add stacked widget to main layout
         layout.addWidget(self.stacked_widget)
         
+        # Show initial view (inventory)
+        self.show_view(0)
+        
     def show_view(self, index: int):
         """Show the selected view."""
         self.stacked_widget.setCurrentIndex(index)

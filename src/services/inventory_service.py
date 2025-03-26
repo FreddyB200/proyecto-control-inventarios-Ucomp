@@ -30,8 +30,10 @@ class InventoryService:
         """
         try:
             query = """
-                SELECT ID, Nombre, Categoria, Cantidad_en_stock, Precio, 
-                       Fecha_vencimiento, Fecha_registro 
+                SELECT ID as id, Nombre as nombre, Categoria as categoria, 
+                       Cantidad_en_stock as stock, Precio as precio, 
+                       Fecha_vencimiento as fecha_vencimiento, 
+                       Fecha_registro as fecha_registro 
                 FROM Producto
                 ORDER BY Nombre
             """
@@ -51,8 +53,10 @@ class InventoryService:
         """
         try:
             query = """
-                SELECT ID, Nombre, Categoria, Cantidad_en_stock, Precio, 
-                       Fecha_vencimiento, Fecha_registro 
+                SELECT ID as id, Nombre as nombre, Categoria as categoria, 
+                       Cantidad_en_stock as stock, Precio as precio, 
+                       Fecha_vencimiento as fecha_vencimiento, 
+                       Fecha_registro as fecha_registro 
                 FROM Producto
                 WHERE ID = ?
             """
