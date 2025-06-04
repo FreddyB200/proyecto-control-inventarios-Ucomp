@@ -4,22 +4,22 @@ Script para inicializar la base de datos con las tablas necesarias.
 
 import sqlite3
 import os
-from src.utils.security import hash_password
+from utils.security import hash_password
+
 
 def init_database():
     """Inicializa la base de datos con las tablas necesarias."""
     # Asegurarse de que el directorio src existe
     if not os.path.exists('src'):
         os.makedirs('src')
-    
-    # Eliminar la base de datos si existe
-    if os.path.exists('src/inventario.db'):
-        os.remove('src/inventario.db')
-    
+
     # Conectar a la base de datos
     conn = sqlite3.connect('src/inventario.db')
     cursor = conn.cursor()
-    
+
+    # Activar claves foráneas
+    cursor.execute('PRAGMA foreign_keys = ON')
+
     # Crear tabla de usuarios
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Usuarios (
@@ -32,17 +32,20 @@ def init_database():
         Fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-    
-    # Crear usuario administrador por defecto
-    admin_password = hash_password('admin123')
-    cursor.execute('''
-    INSERT INTO Usuarios (Usuario, password, Nombre, Apellido, Rol)
-    VALUES (?, ?, ?, ?, ?)
-    ''', ('admin', admin_password, 'Administrador', 'Sistema', 'admin'))
-    
+
+    # Verificar si ya existe el usuario administrador
+    cursor.execute("SELECT Usuario FROM Usuarios WHERE Usuario = 'admin'")
+    if not cursor.fetchone():
+        # Crear usuario administrador por defecto
+        admin_password = hash_password('admin123')
+        cursor.execute('''
+        INSERT INTO Usuarios (Usuario, password, Nombre, Apellido, Rol)
+        VALUES (?, ?, ?, ?, ?)
+        ''', ('admin', admin_password, 'Administrador', 'Sistema', 'admin'))
+
     # Crear tabla de productos
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS Producto (
+    CREATE TABLE IF NOT EXISTS Productos (
         ID INTEGER PRIMARY KEY AUTOINCREMENT,
         Nombre TEXT NOT NULL,
         Categoria TEXT NOT NULL,
@@ -52,7 +55,7 @@ def init_database():
         Fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-    
+
     # Crear tabla de ventas
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Ventas (
@@ -63,30 +66,31 @@ def init_database():
         Precio_unitario REAL NOT NULL,
         Total REAL NOT NULL,
         ID_usuario INTEGER NOT NULL,
-        FOREIGN KEY (ID_producto) REFERENCES Producto (ID),
+        FOREIGN KEY (ID_producto) REFERENCES Productos (ID),
         FOREIGN KEY (ID_usuario) REFERENCES Usuarios (ID)
     )
     ''')
-    
+
     # Crear tabla de movimientos de stock
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS Movimientos_stock (
+    CREATE TABLE IF NOT EXISTS MovimientosStock (
         ID INTEGER PRIMARY KEY AUTOINCREMENT,
         Fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         ID_producto INTEGER NOT NULL,
         Cantidad INTEGER NOT NULL,
         Tipo TEXT NOT NULL,
         ID_usuario INTEGER NOT NULL,
-        FOREIGN KEY (ID_producto) REFERENCES Producto (ID),
+        FOREIGN KEY (ID_producto) REFERENCES Productos (ID),
         FOREIGN KEY (ID_usuario) REFERENCES Usuarios (ID)
     )
     ''')
-    
+
     # Guardar cambios y cerrar conexión
     conn.commit()
     conn.close()
-    
+
     print("Base de datos inicializada correctamente")
 
+
 if __name__ == "__main__":
-    init_database() 
+    init_database()

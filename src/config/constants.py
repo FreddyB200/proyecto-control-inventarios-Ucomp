@@ -37,37 +37,36 @@ SUCCESS_MESSAGES = {
 
 # SQL Queries
 SQL_QUERIES = {
-    "get_user": "SELECT * FROM Usuarios WHERE username = ?",
-    "create_user": "INSERT INTO Usuarios (username, password, rol) VALUES (?, ?, ?)",
-    "update_password": "UPDATE Usuarios SET password = ? WHERE username = ?",
-    "get_product": "SELECT * FROM Productos WHERE id = ?",
+    "get_user": "SELECT * FROM Usuarios WHERE Usuario = ?",
+    "create_user": "INSERT INTO Usuarios (Usuario, password, Rol) VALUES (?, ?, ?)",
+    "update_password": "UPDATE Usuarios SET password = ? WHERE Usuario = ?",
+    "get_product": "SELECT * FROM Productos WHERE ID = ?",
     "get_products": "SELECT * FROM Productos",
-    "get_products_by_category": "SELECT * FROM Productos WHERE categoria = ?",
+    "get_products_by_category": "SELECT * FROM Productos WHERE Categoria = ?",
     "create_product": """
-        INSERT INTO Productos (nombre, categoria, stock, precio, proveedor_id, fecha_vencimiento)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO Productos (Nombre, Categoria, Cantidad_en_stock, Precio, Fecha_vencimiento)
+        VALUES (?, ?, ?, ?, ?)
     """,
     "update_product": """
         UPDATE Productos 
-        SET nombre = ?, categoria = ?, stock = ?, precio = ?, 
-            proveedor_id = ?, fecha_vencimiento = ?
-        WHERE id = ?
+        SET Nombre = ?, Categoria = ?, Cantidad_en_stock = ?, Precio = ?, Fecha_vencimiento = ?
+        WHERE ID = ?
     """,
-    "delete_product": "DELETE FROM Productos WHERE id = ?",
-    "update_stock": "UPDATE Productos SET stock = ? WHERE id = ?",
+    "delete_product": "DELETE FROM Productos WHERE ID = ?",
+    "update_stock": "UPDATE Productos SET Cantidad_en_stock = ? WHERE ID = ?",
     "register_stock_movement": """
-        INSERT INTO MovimientosStock (producto_id, cantidad, tipo, fecha)
+        INSERT INTO MovimientosStock (ID_producto, Cantidad, Tipo, Fecha)
         VALUES (?, ?, ?, ?)
     """,
-    "get_stock_movements": "SELECT * FROM MovimientosStock WHERE producto_id = ?",
-    "create_sale": "INSERT INTO Ventas (fecha, total, usuario_id) VALUES (?, ?, ?)",
+    "get_stock_movements": "SELECT * FROM MovimientosStock WHERE ID_producto = ?",
+    "create_sale": "INSERT INTO Ventas (Fecha, ID_producto, Cantidad, Precio_unitario, Total, ID_usuario) VALUES (?, ?, ?, ?, ?, ?)",
     "create_sale_detail": """
         INSERT INTO DetalleVentas (venta_id, producto_id, cantidad, precio_unitario, subtotal)
         VALUES (?, ?, ?, ?, ?)
     """,
-    "get_sale": "SELECT * FROM Ventas WHERE id = ?",
-    "get_sale_details": "SELECT * FROM DetalleVentas WHERE venta_id = ?",
-    "get_sales_by_date": "SELECT * FROM Ventas WHERE fecha BETWEEN ? AND ?",
+    "get_sale": "SELECT * FROM Ventas WHERE ID = ?",
+    "get_sale_details": "SELECT * FROM Ventas WHERE ID = ?",
+    "get_sales_by_date": "SELECT * FROM Ventas WHERE Fecha BETWEEN ? AND ?",
     "get_supplier": "SELECT * FROM Proveedores WHERE id = ?",
     "get_suppliers": "SELECT * FROM Proveedores",
     "create_supplier": """

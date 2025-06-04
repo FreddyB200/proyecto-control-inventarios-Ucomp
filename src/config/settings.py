@@ -12,7 +12,7 @@ SRC_DIR = os.path.join(BASE_DIR, 'src')
 
 # Configuración de base de datos
 DATABASE = {
-    "path": "src/inventario.db",
+    "path": "postgresql://postgres:postgres321@localhost:5432/inventario",
     "timeout": 30,
     "check_same_thread": False
 }
